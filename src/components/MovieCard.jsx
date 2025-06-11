@@ -4,7 +4,7 @@ const MovieCard = ({movie:{title, release_date, original_language, poster_path, 
   return (
     <div className="movie-card text-white">
       <img
-        src={poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : '../assets/no-poster.png'}
+        src={poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : 'no-poster.png'}
         alt={title}
       />
       <div className="mt-4 movie-details">
