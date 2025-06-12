@@ -18,6 +18,7 @@ function MovieDetails() {
   const [movie, setMovie] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [liked, setLiked] = useState(false);
 
   useEffect(() => {
     const fetchMovie = async () => {
@@ -27,8 +28,10 @@ function MovieDetails() {
         const res = await fetch(`${API_BASE_URL}/movie/${id}`, API_OPTIONS);
         if (!res.ok) throw new Error("Failed to load movie.");
         const data = await res.json();
-        console.log(data);
         setMovie(data);
+        // Check if liked
+        const likedMovies = JSON.parse(localStorage.getItem("likedMovies")) || [];
+        setLiked(likedMovies.some((m) => m.id === data.id));
       } catch (err) {
         setError(err.message || "Something went wrong.");
       } finally {
@@ -39,27 +42,45 @@ function MovieDetails() {
     fetchMovie();
   }, [id]);
 
-  if (isLoading)
-  return (
-    <div className="flex items-center justify-center min-h-[70vh]">
-      <Loader />
-    </div>
-  );
+  const toggleLike = () => {
+    let likedMovies = JSON.parse(localStorage.getItem("likedMovies")) || [];
+    if (liked) {
+      likedMovies = likedMovies.filter((m) => m.id !== movie.id);
+    } else {
+      likedMovies.push({
+        id: movie.id,
+        title: movie.title,
+        poster_path: movie.poster_path,
+        vote_average: movie.vote_average,
+        release_date: movie.release_date,
+        original_language: movie.original_language
+      });
+    }
+    localStorage.setItem("likedMovies", JSON.stringify(likedMovies));
+    setLiked(!liked);
+  };
 
-if (error)
-  return (
-    <div className="flex items-center justify-center min-h-[70vh] flex-col">
-      <div className="text-center text-red-500 text-xl">{error}</div>
-      <div className="p-4 z-50">
-        <Link
-          to="/"
-          className="text-white bg-gray-800 hover:bg-gray-700 px-4 py-2  transition font-semibold"
-        >
-          Home
-        </Link>
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <Loader />
       </div>
-    </div>
-  );
+    );
+
+  if (error)
+    return (
+      <div className="flex items-center justify-center min-h-[70vh] flex-col">
+        <div className="text-center text-red-500 text-xl">{error}</div>
+        <div className="p-4 z-50">
+          <Link
+            to="/"
+            className="text-white bg-gray-800 hover:bg-gray-700 px-4 py-2 transition font-semibold"
+          >
+            Home
+          </Link>
+        </div>
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-[#121212] text-gray-200">
@@ -67,7 +88,7 @@ if (error)
       <div className="p-4 fixed top-4 left-4 z-50">
         <Link
           to="/"
-          className="text-white hover:bg-violet-900 px-4 py-2  transition text-sm font-semibold"
+          className="text-white hover:bg-violet-900 px-4 py-2 transition text-sm font-semibold"
         >
           ← Back to Home
         </Link>
@@ -85,11 +106,10 @@ if (error)
         {/* Movie Info */}
         <div className="md:col-span-2 space-y-4">
           <h1 className="text-gradient">{movie.title}</h1>
-          {movie.tagline && (
-            <p className="italic text-gray-400 text-lg">{movie.tagline}</p>
-          )}
+          {movie.tagline && <p className="italic text-gray-400 text-lg">{movie.tagline}</p>}
           <p className="text-base">{movie.overview}</p>
 
+          {/* Details */}
           <div className="grid grid-cols-2 gap-4 text-sm mt-6">
             <div><strong>Release:</strong> {movie.release_date}</div>
             <div><strong>Runtime:</strong> {movie.runtime} min</div>
@@ -105,7 +125,10 @@ if (error)
           {movie.genres?.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-4">
               {movie.genres.map((g) => (
-                <span key={g.id} className="px-3 py-1 bg-violet-800 text-white rounded-full text-sm">
+                <span
+                  key={g.id}
+                  className="px-3 py-1 bg-violet-800 text-white rounded-full text-sm"
+                >
                   {g.name}
                 </span>
               ))}
@@ -116,11 +139,11 @@ if (error)
           {movie.spoken_languages?.length > 0 && (
             <div className="text-sm mt-4">
               <strong>Spoken Languages:</strong>{" "}
-              {movie.spoken_languages.map(lang => lang.english_name).join(", ")}
+              {movie.spoken_languages.map((lang) => lang.english_name).join(", ")}
             </div>
           )}
 
-          {/* Production */}
+          {/* Production Companies */}
           {movie.production_companies?.length > 0 && (
             <div className="mt-6">
               <h2 className="text-lg font-semibold mb-2">Production Companies</h2>
@@ -132,7 +155,7 @@ if (error)
             </div>
           )}
 
-          {/* Homepage Link */}
+          {/* Homepage */}
           {movie.homepage && (
             <a
               href={movie.homepage}
@@ -143,6 +166,18 @@ if (error)
               Visit Official Website
             </a>
           )}
+
+          {/* Like Button */}
+          <button
+            onClick={toggleLike}
+            className={`cursor-pointer inline-block mt-6 mx-3 px-4 py-2 border rounded-sm rounded-md font-medium ${
+              liked
+                ? "bg-violet-800 text-white hover:bg-violet-700 border-none"
+                : "text-white hover:bg-white hover:text-black"
+            }`}
+          >
+            {liked ? "❤️ Liked" : "🤍 Like"}
+          </button>
         </div>
       </div>
     </div>
