@@ -27,6 +27,7 @@ function MovieDetails() {
         const res = await fetch(`${API_BASE_URL}/movie/${id}`, API_OPTIONS);
         if (!res.ok) throw new Error("Failed to load movie.");
         const data = await res.json();
+        console.log(data);
         setMovie(data);
       } catch (err) {
         setError(err.message || "Something went wrong.");
@@ -38,8 +39,19 @@ function MovieDetails() {
     fetchMovie();
   }, [id]);
 
-  if (isLoading) return <Loader />;
-  if (error) return <div className="text-center text-red-500 mt-10">{error}</div>;
+  if (isLoading)
+  return (
+    <div className="flex items-center justify-center min-h-[70vh]">
+      <Loader />
+    </div>
+  );
+
+if (error)
+  return (
+    <div className="flex items-center justify-center min-h-[70vh]">
+      <div className="text-center text-red-500 text-lg">{error}</div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#121212] text-gray-200">
@@ -47,7 +59,7 @@ function MovieDetails() {
       <div className="p-4 fixed top-4 left-4 z-50">
         <Link
           to="/"
-          className="text-white hover:text-blue-400 transition text-sm font-semibold"
+          className="text-white hover:bg-violet-900 px-4 py-2  transition text-sm font-semibold"
         >
           ← Back to Home
         </Link>
@@ -85,7 +97,7 @@ function MovieDetails() {
           {movie.genres?.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-4">
               {movie.genres.map((g) => (
-                <span key={g.id} className="px-3 py-1 bg-blue-800 text-white rounded-full text-sm">
+                <span key={g.id} className="px-3 py-1 bg-violet-800 text-white rounded-full text-sm">
                   {g.name}
                 </span>
               ))}
@@ -118,7 +130,7 @@ function MovieDetails() {
               href={movie.homepage}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
+              className="inline-block mt-6 px-4 py-2 bg-violet-800 hover:bg-violet-700 text-white rounded-md font-medium"
             >
               Visit Official Website
             </a>
