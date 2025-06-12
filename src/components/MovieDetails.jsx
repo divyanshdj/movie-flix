@@ -48,8 +48,16 @@ function MovieDetails() {
 
 if (error)
   return (
-    <div className="flex items-center justify-center min-h-[70vh]">
-      <div className="text-center text-red-500 text-lg">{error}</div>
+    <div className="flex items-center justify-center min-h-[70vh] flex-col">
+      <div className="text-center text-red-500 text-xl">{error}</div>
+      <div className="p-4 z-50">
+        <Link
+          to="/"
+          className="text-white bg-gray-800 hover:bg-gray-700 px-4 py-2  transition font-semibold"
+        >
+          Home
+        </Link>
+      </div>
     </div>
   );
 

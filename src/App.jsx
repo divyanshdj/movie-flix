@@ -8,6 +8,7 @@ import MovieCard from "./components/MovieCard";
 import MovieDetails from "./components/MovieDetails";
 import { getTrendingMovies, updateSearchCount } from "./appwrite";
 import Loader from "./components/Loader";
+import LikedList from "./components/LikedList";
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
 
@@ -62,7 +63,7 @@ function App() {
       }
     } catch (error) {
       console.error("Error fetching movies:", error);
-      setErrorMessage("Failed to fetch movies. Please try again later.");
+      setErrorMessage("Failed to fetch movies. Please try again later. (Maybe JIO Network)");
     } finally {
       setIsLoading(false);
     }
@@ -107,6 +108,13 @@ function App() {
                   <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
                 </header>
 
+                <div className="flex justify-center mt-6">
+                  <Link to="/liked" className="search text-white w-auto mt-1">
+                    ❤️ View Liked Movies
+                  </Link>
+                </div>
+
+
                 {isLoadingTrending ? (
                   <Loader />
                 ) : errorMessageTrending ? (
@@ -149,6 +157,7 @@ function App() {
           }
         />
         <Route path="/movie/:id" element={<MovieDetails/>} />
+        <Route path="/liked" element={<LikedList />} />
       </Routes>
     </BrowserRouter>
   );
