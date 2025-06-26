@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import { useDebounce } from "react-use";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
@@ -22,48 +23,156 @@ const API_OPTIONS = {
   },
 };
 
+// Content type enum
+const ContentType = {
+  MOVIE: "movie",
+  TV: "tv",
+  BOTH: "both",
+};
+
 function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [movies, setMovies] = useState([]);
+  const [content, setContent] = useState([]);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [isLoadingTrending, setIsLoadingTrending] = useState(false);
   const [errorMessageTrending, setErrorMessageTrending] = useState("");
   const [trendingMovies, setTrendingMovies] = useState([]);
+  const [contentType, setContentType] = useState(ContentType.BOTH);
 
   useDebounce(() => setDebouncedSearchTerm(searchTerm), 500, [searchTerm]);
 
-  const fetchMovies = async (query = "") => {
+  const fetchContent = async (query = "") => {
     setIsLoading(true);
     setErrorMessage("");
     try {
-      const endpoint = query
-        ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
-        : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+      let endpoint;
+      if (query) {
+        if (contentType === ContentType.BOTH) {
+          // Fetch both movies and TV shows
+          const [moviesResponse, tvResponse] = await Promise.all([
+            fetch(
+              `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`,
+              API_OPTIONS
+            ),
+            fetch(
+              `${API_BASE_URL}/search/tv?query=${encodeURIComponent(query)}`,
+              API_OPTIONS
+            ),
+          ]);
 
-      const response = await fetch(endpoint, API_OPTIONS);
+          if (!moviesResponse.ok || !tvResponse.ok) {
+            throw new Error("Network response was not ok");
+          }
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
+          const moviesData = await moviesResponse.json();
+          const tvData = await tvResponse.json();
+
+          // Combine results with type indicator
+          const combinedResults = [
+            ...(moviesData.results?.map((item) => ({
+              ...item,
+              media_type: ContentType.MOVIE,
+            })) || []),
+            ...(tvData.results?.map((item) => ({
+              ...item,
+              media_type: ContentType.TV,
+            })) || []),
+          ].sort((a, b) => b.popularity - a.popularity); // Sort by popularity
+
+          if (combinedResults.length === 0) {
+            setErrorMessage(
+              "No content found. Please try a different search term."
+            );
+            setContent([]);
+            return;
+          }
+          setContent(combinedResults);
+        } else {
+          // Fetch either movies or TV shows based on selection
+          endpoint = `${API_BASE_URL}/search/${contentType}?query=${encodeURIComponent(
+            query
+          )}`;
+          const response = await fetch(endpoint, API_OPTIONS);
+
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+
+          const data = await response.json();
+
+          if (data.response === "false" || data.results.length === 0) {
+            setErrorMessage(
+              `No ${
+                contentType === ContentType.MOVIE ? "movies" : "TV shows"
+              } found. Please try a different search term.`
+            );
+            setContent([]);
+            return;
+          }
+
+          // Add media_type to each item for consistency
+          setContent(
+            data.results.map((item) => ({ ...item, media_type: contentType }))
+          );
+        }
+      } else {
+        // Discover popular content when no query
+        if (contentType === ContentType.BOTH) {
+          const [moviesResponse, tvResponse] = await Promise.all([
+            fetch(
+              `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`,
+              API_OPTIONS
+            ),
+            fetch(
+              `${API_BASE_URL}/discover/tv?sort_by=popularity.desc`,
+              API_OPTIONS
+            ),
+          ]);
+
+          if (!moviesResponse.ok || !tvResponse.ok) {
+            throw new Error("Network response was not ok");
+          }
+
+          const moviesData = await moviesResponse.json();
+          const tvData = await tvResponse.json();
+
+          // Combine results with type indicator
+          const combinedResults = [
+            ...(moviesData.results?.map((item) => ({
+              ...item,
+              media_type: ContentType.MOVIE,
+            })) || []),
+            ...(tvData.results?.map((item) => ({
+              ...item,
+              media_type: ContentType.TV,
+            })) || []),
+          ].sort((a, b) => b.popularity - a.popularity); // Sort by popularity
+          setContent(combinedResults);
+        } else {
+          endpoint = `${API_BASE_URL}/discover/${contentType}?sort_by=popularity.desc`;
+          const response = await fetch(endpoint, API_OPTIONS);
+
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+
+          const data = await response.json();
+          setContent(
+            data.results.map((item) => ({ ...item, media_type: contentType }))
+          );
+        }
       }
 
-      const data = await response.json();
-
-      if (data.response === "false" || data.results.length === 0) {
-        setErrorMessage("No movies found. Please try a different search term.");
-        setMovies([]);
-        return;
-      }
-
-      setMovies(data.results || []);
-
-      if (query && data.results.length > 0) {
-        await updateSearchCount(query, data.results[0]);
+      if (query && content.length > 0) {
+        await updateSearchCount(query, content[0]);
       }
     } catch (error) {
-      console.error("Error fetching movies:", error);
-      setErrorMessage("Failed to fetch movies. Please try again later. (Maybe JIO Network)");
+      console.error("Error fetching content:", error);
+      setErrorMessage(
+        "Failed to fetch content. Please try again later. (Maybe JIO Network)"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -76,15 +185,17 @@ function App() {
       setTrendingMovies(movies);
     } catch (error) {
       console.error(`Error fetching trending movies: ${error}`);
-      setErrorMessageTrending("Failed to fetch trending movies. Please try again later.");
+      setErrorMessageTrending(
+        "Failed to fetch trending movies. Please try again later."
+      );
     } finally {
       setIsLoadingTrending(false);
     }
   };
 
   useEffect(() => {
-    fetchMovies(debouncedSearchTerm);
-  }, [debouncedSearchTerm]);
+    fetchContent(debouncedSearchTerm);
+  }, [debouncedSearchTerm, contentType]);
 
   useEffect(() => {
     loadTrendingMovies();
@@ -102,10 +213,49 @@ function App() {
                 <header>
                   <img src="./hero.png" alt="hero-banner" />
                   <h1>
-                    Find <span className="text-gradient">Movie</span> You'll Enjoy
-                    Without the Hassle
+                    Find <span className="text-gradient">Movies & Shows</span>{" "}
+                    You'll Enjoy Without the Hassle
                   </h1>
-                  <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+                  <Search
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                  />
+
+                  {/* Content Type Selector */}
+                  <div className="mt-6">
+                    <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+                      <button
+                        onClick={() => setContentType(ContentType.MOVIE)}
+                        className={`cursor-pointer min-w-[100px] px-5 py-2 rounded-full font-medium transition-all duration-200 text-sm sm:text-base ${
+                          contentType === ContentType.MOVIE
+                            ? "bg-violet-700 text-white shadow-md"
+                            : "bg-gray-800 text-gray-300 hover:bg-violet-600 hover:text-white"
+                        }`}
+                      >
+                        🎬 Movies
+                      </button>
+                      <button
+                        onClick={() => setContentType(ContentType.TV)}
+                        className={`cursor-pointer min-w-[100px] px-5 py-2 rounded-full font-medium transition-all duration-200 text-sm sm:text-base ${
+                          contentType === ContentType.TV
+                            ? "bg-violet-700 text-white shadow-md"
+                            : "bg-gray-800 text-gray-300 hover:bg-violet-600 hover:text-white"
+                        }`}
+                      >
+                        📺 TV Shows
+                      </button>
+                      <button
+                        onClick={() => setContentType(ContentType.BOTH)}
+                        className={`cursor-pointer min-w-[100px] px-5 py-2 rounded-full font-medium transition-all duration-200 text-sm sm:text-base ${
+                          contentType === ContentType.BOTH
+                            ? "bg-violet-700 text-white shadow-md"
+                            : "bg-gray-800 text-gray-300 hover:bg-violet-600 hover:text-white"
+                        }`}
+                      >
+                        🎞️ Both
+                      </button>
+                    </div>
+                  </div>
                 </header>
 
                 <div className="flex justify-center mt-6">
@@ -113,7 +263,6 @@ function App() {
                     ❤️ View Liked Movies
                   </Link>
                 </div>
-
 
                 {isLoadingTrending ? (
                   <Loader />
@@ -128,7 +277,11 @@ function App() {
                           <p>{idx + 1}</p>
                           <Link to={`/movie/${mov.movie_id}`}>
                             <img
-                              src={mov.poster_url ? mov.poster_url : "no-poster.png"}
+                              src={
+                                mov.poster_url
+                                  ? mov.poster_url
+                                  : "no-poster.png"
+                              }
                               alt={mov.searchTerm}
                             />
                           </Link>
@@ -139,15 +292,25 @@ function App() {
                 )}
 
                 <section className="all-movies">
-                  <h2 className="mt-[10px]">All Movies</h2>
+                  <h2 className="mt-[10px]">
+                    {contentType === ContentType.MOVIE
+                      ? "Popular Movies"
+                      : contentType === ContentType.TV
+                      ? "Popular TV Shows"
+                      : "Popular Movies & TV Shows"}
+                  </h2>
                   {isLoading ? (
                     <Spinner />
                   ) : errorMessage ? (
                     <p className="text-red-500">{errorMessage}</p>
                   ) : (
                     <ul>
-                      {movies.map((movie) => (
-                        <MovieCard key={movie.id} movie={movie} />
+                      {content.map((item) => (
+                        <MovieCard
+                          key={`${item.media_type}-${item.id}`}
+                          movie={item}
+                          isTvShow={item.media_type === ContentType.TV}
+                        />
                       ))}
                     </ul>
                   )}
@@ -156,7 +319,8 @@ function App() {
             </main>
           }
         />
-        <Route path="/movie/:id" element={<MovieDetails/>} />
+        <Route path="/movie/:id" element={<MovieDetails />} />
+        <Route path="/tv/:id" element={<MovieDetails isTvShow={true} />} />
         <Route path="/liked" element={<LikedList />} />
       </Routes>
     </BrowserRouter>
