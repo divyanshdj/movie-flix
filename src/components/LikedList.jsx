@@ -36,7 +36,7 @@ const LikedList = () => {
 
       {/* Container */}
       <div className="max-w-7xl mx-auto mt-20">
-        <h2 className="text-white text-3xl sm:text-4xl font-bold mb-2 text-center">
+        <h2 className="text-white text-3xl sm:text-4xl font-bold mb-6 text-center">
           ❤️ Your Favorites
         </h2>
 

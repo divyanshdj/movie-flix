@@ -10,6 +10,7 @@ import MovieDetails from "./components/MovieDetails";
 import { getTrendingMovies, updateSearchCount } from "./appwrite";
 import Loader from "./components/Loader";
 import LikedList from "./components/LikedList";
+import Navbar from "./components/Navbar";
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
 
@@ -207,116 +208,128 @@ function App() {
         <Route
           path="/"
           element={
-            <main>
-              <div className="pattern" />
-              <div className="wrapper">
-                <header>
-                  <img src="./hero.png" alt="hero-banner" />
-                  <h1>
-                    Find <span className="text-gradient">Movies & Shows</span>{" "}
-                    You'll Enjoy Without the Hassle
-                  </h1>
-                  <Search
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                  />
+            <>
+              <Navbar
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                contentType={contentType}
+                setContentType={setContentType}
+              />
 
-                  {/* Content Type Selector */}
-                  <div className="mt-6">
-                    <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
-                      <button
-                        onClick={() => setContentType(ContentType.MOVIE)}
-                        className={`cursor-pointer min-w-[100px] px-5 py-2 rounded-full font-medium transition-all duration-200 text-sm sm:text-base ${
-                          contentType === ContentType.MOVIE
-                            ? "bg-violet-700 text-white shadow-md"
-                            : "bg-gray-800 text-gray-300 hover:bg-violet-600 hover:text-white"
-                        }`}
-                      >
-                        🎬 Movies
-                      </button>
-                      <button
-                        onClick={() => setContentType(ContentType.TV)}
-                        className={`cursor-pointer min-w-[100px] px-5 py-2 rounded-full font-medium transition-all duration-200 text-sm sm:text-base ${
-                          contentType === ContentType.TV
-                            ? "bg-violet-700 text-white shadow-md"
-                            : "bg-gray-800 text-gray-300 hover:bg-violet-600 hover:text-white"
-                        }`}
-                      >
-                        📺 TV Shows
-                      </button>
-                      <button
-                        onClick={() => setContentType(ContentType.BOTH)}
-                        className={`cursor-pointer min-w-[100px] px-5 py-2 rounded-full font-medium transition-all duration-200 text-sm sm:text-base ${
-                          contentType === ContentType.BOTH
-                            ? "bg-violet-700 text-white shadow-md"
-                            : "bg-gray-800 text-gray-300 hover:bg-violet-600 hover:text-white"
-                        }`}
-                      >
-                        🎞️ Both
-                      </button>
+              <main>
+                <div className="pattern" />
+                <div className="wrapper">
+                  <header className="text-center space-y-6 animate-fade-in">
+                    <img
+                      src="./hero.png"
+                      alt="hero-banner"
+                      className="mx-auto max-w-xs sm:max-w-md"
+                    />
+                    <h1>
+                      Find <span className="text-gradient">Movies & Shows</span>{" "}
+                      You'll Enjoy Without the Hassle
+                    </h1>
+
+                    {/* Search */}
+                    <div className="w-full max-w-xl mx-auto">
+                      <Search
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                      />
                     </div>
+
+                    {/* Content Type Selector */}
+                    <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+                      {[
+                        { type: ContentType.MOVIE, label: "🎬 Movies" },
+                        { type: ContentType.TV, label: "📺 TV Shows" },
+                        { type: ContentType.BOTH, label: "🎞️ Both" },
+                      ].map((item) => (
+                        <button
+                          key={item.type}
+                          onClick={() => setContentType(item.type)}
+                          className={`cursor-pointer min-w-[100px] px-5 py-2 rounded-full font-medium transition-all duration-200 text-sm sm:text-base ${
+                            contentType === item.type
+                              ? "bg-violet-700 text-white shadow-md"
+                              : "bg-gray-800 text-gray-300 hover:bg-violet-600 hover:text-white"
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </header>
+
+                  {/* View Liked */}
+                  <div className="flex justify-center mt-6">
+                    <Link to="/liked" className="search text-white w-auto mt-1">
+                      ❤️ View Liked Movies
+                    </Link>
                   </div>
-                </header>
 
-                <div className="flex justify-center mt-6">
-                  <Link to="/liked" className="search text-white w-auto mt-1">
-                    ❤️ View Liked Movies
-                  </Link>
-                </div>
-
-                {isLoadingTrending ? (
-                  <Loader />
-                ) : errorMessageTrending ? (
-                  <p className="text-red-500">{errorMessageTrending}</p>
-                ) : (
-                  <section className="trending">
-                    <h2 className="mt-[10px]">Trending Movies</h2>
-                    <ul>
-                      {trendingMovies.map((mov, idx) => (
-                        <li key={mov.$id}>
-                          <p>{idx + 1}</p>
-                          <Link to={`/movie/${mov.movie_id}`}>
-                            <img
-                              src={
-                                mov.poster_url
-                                  ? mov.poster_url
-                                  : "no-poster.png"
-                              }
-                              alt={mov.searchTerm}
-                            />
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
-
-                <section className="all-movies">
-                  <h2 className="mt-[10px]">
-                    {contentType === ContentType.MOVIE
-                      ? "Popular Movies"
-                      : contentType === ContentType.TV
-                      ? "Popular TV Shows"
-                      : "Popular Movies & TV Shows"}
-                  </h2>
-                  {isLoading ? (
-                    <Spinner />
-                  ) : errorMessage ? (
-                    <p className="text-red-500">{errorMessage}</p>
+                  {/* Trending */}
+                  {isLoadingTrending ? (
+                    <Loader />
+                  ) : errorMessageTrending ? (
+                    <p className="text-red-500">{errorMessageTrending}</p>
                   ) : (
-                    <ul>
-                      {content.map((item) => (
-                        <MovieCard
-                          key={`${item.media_type}-${item.id}`}
-                          movie={item}
-                          isTvShow={item.media_type === ContentType.TV}
-                        />
-                      ))}
-                    </ul>
+                    <section className="trending">
+                      <h2 className="mt-[10px]">Trending Now</h2>
+                      <ul>
+                        {trendingMovies.map((mov, idx) => (
+                          <li key={mov.$id}>
+                            <p>{idx + 1}</p>
+                            <Link
+                              to={`/${
+                                mov.media_type == null
+                                  ? "movie"
+                                  : mov.media_type
+                              }/${mov.movie_id}`}
+                            >
+                              <img
+                                src={
+                                  mov.poster_url
+                                    ? mov.poster_url
+                                    : "no-poster.png"
+                                }
+                                alt={mov.searchTerm}
+                              />
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
                   )}
-                </section>
-              </div>
-            </main>
+
+                  {/* All Movies */}
+                  <section className="all-movies">
+                    <h2 className="mt-[10px]">
+                      {contentType === ContentType.MOVIE
+                        ? "Popular Movies"
+                        : contentType === ContentType.TV
+                        ? "Popular TV Shows"
+                        : "Popular Movies & TV Shows"}
+                    </h2>
+
+                    {isLoading ? (
+                      <Spinner />
+                    ) : errorMessage ? (
+                      <p className="text-red-500">{errorMessage}</p>
+                    ) : (
+                      <ul>
+                        {content.map((item) => (
+                          <MovieCard
+                            key={`${item.media_type}-${item.id}`}
+                            movie={item}
+                            isTvShow={item.media_type === ContentType.TV}
+                          />
+                        ))}
+                      </ul>
+                    )}
+                  </section>
+                </div>
+              </main>
+            </>
           }
         />
         <Route path="/movie/:id" element={<MovieDetails />} />
